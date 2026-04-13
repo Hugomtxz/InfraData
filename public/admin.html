@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>InfraData | Panel de Administración</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body style="background-color: #f4f7f6; display: flex;">
+    
+    <div class="dashboard-container" style="width: 100%; display: flex;">
+        <nav class="sidebar" style="width: 250px; background: #2c3e50; color: white; height: 100vh; padding: 20px;">
+            <h2>🏢 InfraData Admin</h2><br>
+            <ul style="list-style: none; padding: 0; line-height: 2.5;">
+    <li style="background: rgba(255,255,255,0.1); padding: 5px 10px; border-radius: 5px;">⚙️ Gestión de Reportes</li>
+    <li><a href="estadisticas.html" style="color: white; text-decoration: none;">📊 Estadísticas Globales</a></li>
+    <li><a href="mapa.html" style="color: white; text-decoration: none;">🗺️ Mapa de Reportes</a></li>
+    <li><a href="login.html" style="color: #ff6b6b; text-decoration: none; display:block; margin-top:30px;">🚪 Cerrar Sesión</a></li>
+</ul>
+        </nav>
+            
+        <main style="flex: 1; padding: 40px; overflow-y: auto; height: 100vh;">
+            <header style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #ddd; padding-bottom: 10px;">
+                <h2>Revisión de Proyectos de Infraestructura</h2>
+                <span style="background-color: #ffeaa7; color: #d35400; padding: 5px 15px; border-radius: 20px; font-weight: bold; font-size: 14px;">Modo Administrador</span>
+            </header>
+
+            <section style="padding: 20px; background: white; border-radius: 8px; margin-top: 30px; box-shadow: 0 4px 8px rgba(0,0,0,0.05);">
+               <div style="margin-bottom: 20px;">
+    <h3 style="color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px; display: inline-block;">Reportes Pendientes de Aprobación</h3>
+</div>
+
+                <table style="width: 100%; border-collapse: collapse; text-align: left;">
+                    <thead>
+                        <tr style="background-color: #f8f9fa; border-bottom: 2px solid #ddd;">
+                            <th style="padding: 15px;">Proyecto</th>
+                            <th style="padding: 15px;">Tecnología</th>
+                            <th style="padding: 15px;">Presupuesto</th>
+                            <th style="padding: 15px;">Estado Actual</th>
+                            <th style="padding: 15px;">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tablaReportesAdmin">
+                        </tbody>
+                </table>
+            </section>
+        </main>
+    </div>
+
+    <div id="modalDetalles" class="modal-overlay">
+        <div class="modal-content">
+            <span class="close-modal" onclick="cerrarModal()">&times;</span>
+            <h2 id="modalTitulo" style="color: #2c3e50; margin-bottom: 20px; border-bottom: 2px solid #3498db; padding-bottom: 10px;">Detalles del Proyecto</h2>
+            
+            <div class="modal-body">
+                <p><strong>ID Firebase:</strong> <span id="modalId"></span></p>
+                <p><strong>Tecnología (ODS 9):</strong> <span id="modalTecnologia"></span></p>
+                <p><strong>Presupuesto Autorizado:</strong> <span id="modalPresupuesto" style="color: #27ae60; font-weight: bold;"></span></p>
+                <p><strong>Coordenadas GPS:</strong> <span id="modalCoordenadas"></span></p>
+                <p><strong>Fecha de Registro:</strong> <span id="modalFecha"></span></p>
+                <p style="border: none;"><strong>Descripción Técnica:</strong></p>
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; font-style: italic; color: #555;" id="modalDescripcion"></div>
+            </div>
+            
+            <button onclick="cerrarModal()" style="margin-top: 20px; width: 100%; padding: 10px; background: #34495e; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">Cerrar Ventana</button>
+        </div>
+    </div>
+
+    <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+    // ¡Añadimos deleteDoc aquí!
+    import { getFirestore, collection, getDocs, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyBVNkeV1ac6fs-hqzQeBZY1sQ79qoXdHLk",
+        authDomain: "infradata-ec24a.firebaseapp.com",
+        projectId: "infradata-ec24a",
+        storageBucket: "infradata-ec24a.firebasestorage.app",
+        messagingSenderId: "574865726695",
+        appId: "1:574865726695:web:b19b5c639c0f8b8b475642"
+    };
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    window.memoriaReportes = {};
+
+    window.actualizarEstatus = async function(idDoc, nuevoEstado) {
+        try {
+            const reporteRef = doc(db, "reportes", idDoc);
+            await updateDoc(reporteRef, { estado: nuevoEstado });
+            
+            const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 3000, timerProgressBar: true });
+            Toast.fire({ icon: 'success', title: `Estatus actualizado a: ${nuevoEstado}` });
+        } catch (error) {
+            Swal.fire('Error', 'No se pudo cambiar el estado', 'error');
+        }
+    };
+
+    // --- NUEVO: FUNCIÓN DE BORRADO PROFESIONAL ---
+    window.borrarProyecto = async function(idDoc, nombreProyecto) {
+        // Alerta que pide confirmación escribiendo el nombre
+        const { value: nombreDigitado } = await Swal.fire({
+            title: '⚠️ ¿Eliminar Proyecto?',
+            html: `Esta acción no se puede deshacer.<br><br>Para confirmar, escribe exactamente: <br><b>${nombreProyecto}</b>`,
+            input: 'text',
+            inputPlaceholder: 'Escribe el nombre del proyecto aquí...',
+            showCancelButton: true,
+            confirmButtonColor: '#e74c3c',
+            cancelButtonColor: '#95a5a6',
+            confirmButtonText: '🗑️ Eliminar Definitivamente',
+            cancelButtonText: 'Cancelar',
+            inputValidator: (value) => {
+                if (!value) {
+                    return 'Debes escribir el nombre para confirmar.';
+                }
+                if (value !== nombreProyecto) {
+                    return 'El nombre no coincide. Inténtalo de nuevo.';
+                }
+            }
+        });
+
+        // Si el usuario escribió el nombre correctamente
+        if (nombreDigitado === nombreProyecto) {
+            try {
+                // Borramos de Firebase
+                await deleteDoc(doc(db, "reportes", idDoc));
+                Swal.fire('¡Eliminado!', 'El proyecto ha sido borrado del sistema.', 'success');
+                cargarReportes(); // Recargamos la tabla automáticamente
+            } catch (error) {
+                console.error("Error al borrar:", error);
+                Swal.fire('Error', 'Hubo un problema al intentar eliminar el proyecto.', 'error');
+            }
+        }
+    };
+
+    window.abrirModal = function(idDoc) {
+        const datos = window.memoriaReportes[idDoc];
+        if(!datos) return;
+
+        document.getElementById('modalTitulo').innerText = datos.proyecto;
+        document.getElementById('modalId').innerText = idDoc;
+        document.getElementById('modalTecnologia').innerText = datos.tecnologia || "No especificada";
+        document.getElementById('modalCoordenadas').innerText = datos.coordenadas || "Sin GPS";
+        document.getElementById('modalFecha').innerText = datos.fecha || "Reciente";
+        document.getElementById('modalDescripcion').innerText = datos.descripcion || "Sin detalles técnicos registrados.";
+        
+        const formatoMXN = new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(datos.presupuesto || 0);
+        document.getElementById('modalPresupuesto').innerText = formatoMXN;
+
+        document.getElementById('modalDetalles').style.display = 'flex';
+    };
+
+    window.cerrarModal = function() {
+        document.getElementById('modalDetalles').style.display = 'none';
+    };
+
+    async function cargarReportes() {
+        const tabla = document.getElementById('tablaReportesAdmin');
+        tabla.innerHTML = "<tr><td colspan='5' style='text-align:center; padding: 20px;'>Cargando reportes desde Firebase...</td></tr>";
+
+        try {
+            const querySnapshot = await getDocs(collection(db, "reportes"));
+            tabla.innerHTML = ""; 
+
+            if (querySnapshot.empty) {
+                tabla.innerHTML = "<tr><td colspan='5' style='text-align:center;'>No hay reportes registrados aún.</td></tr>";
+                return;
+            }
+
+            querySnapshot.forEach((documento) => {
+                const datos = documento.data();
+                const idDocumento = documento.id;
+                
+                window.memoriaReportes[idDocumento] = datos;
+
+                const formatoDinero = new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(datos.presupuesto || 0);
+
+                const fila = `
+                    <tr style="border-bottom: 1px solid #eee; transition: 0.2s;">
+                        <td style="padding: 15px;"><strong>${datos.proyecto || 'Sin nombre'}</strong></td>
+                        <td style="padding: 15px;">${datos.tecnologia || '-'}</td>
+                        <td style="padding: 15px;">${formatoDinero}</td>
+                        <td style="padding: 15px;">
+                            <select onchange="actualizarEstatus('${idDocumento}', this.value)" style="padding: 6px; border-radius: 4px; border: 1px solid #ccc; font-weight: bold; outline: none;">
+                                <option value="Pendiente" ${datos.estado === 'Pendiente' ? 'selected' : ''}>⏳ Pendiente</option>
+                                <option value="Revisando" ${datos.estado === 'Revisando' ? 'selected' : ''}>👀 Revisando</option>
+                                <option value="Completado" ${datos.estado === 'Completado' ? 'selected' : ''}>✅ Completado</option>
+                            </select>
+                        </td>
+                        <td style="padding: 15px; display: flex; gap: 5px;">
+                            <button onclick="abrirModal('${idDocumento}')" style="background: #3498db; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; transition: 0.2s;">🔍 Detalles</button>
+                            
+                            <button onclick="borrarProyecto('${idDocumento}', '${datos.proyecto}')" style="background: #e74c3c; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; transition: 0.2s;">🗑️ Borrar</button>
+                        </td>
+                    </tr>
+                `;
+                tabla.innerHTML += fila;
+            });
+        } catch (error) {
+            console.error("Error:", error);
+            tabla.innerHTML = "<tr><td colspan='5' style='color:red; text-align:center;'>Error al conectar con la base de datos.</td></tr>";
+        }
+    }
+
+    cargarReportes();
+    </script>
+</body>
+</html>

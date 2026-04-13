@@ -1,0 +1,150 @@
+:root {
+    --color-primario: #F39C12; /* Naranja ODS 9 */
+    --color-secundario: #2C3E50; /* Azul Marino */
+    --color-fondo: #F4F7F6;
+    --color-blanco: #FFFFFF;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+body { background-color: var(--color-fondo); color: #333; overflow-x: hidden; }
+
+/* Mensajes de Alerta Flotantes */
+.mensaje { position: fixed; top: 20px; right: 20px; padding: 15px 25px; border-radius: 8px; font-weight: bold; z-index: 1000; box-shadow: 0 4px 15px rgba(0,0,0,0.2); display: none; }
+.mensaje:not(:empty) { display: block; animation: slideIn 0.3s ease-out; }
+@keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
+.exito { background-color: #2ecc71; color: white; border-left: 5px solid #27ae60; }
+.error { background-color: #e74c3c; color: white; border-left: 5px solid #c0392b; }
+
+/* Vista Pública - Pantalla Dividida */
+.split-container { display: flex; height: 100vh; }
+.split-left { flex: 1; background: linear-gradient(135deg, var(--color-secundario) 0%, #1a252f 100%); color: white; display: flex; align-items: center; justify-content: center; padding: 40px; }
+.brand-info { max-width: 500px; }
+.brand-info h1 { font-size: 3.5rem; margin-bottom: 10px; color: var(--color-primario); }
+.tagline { font-size: 1.2rem; margin-bottom: 40px; color: #bdc3c7; }
+.ods-card { background: rgba(255,255,255,0.1); padding: 20px; border-radius: 12px; display: flex; gap: 20px; align-items: center; border-left: 5px solid var(--color-primario); }
+.ods-icon { font-size: 2.5rem; }
+
+.split-right { flex: 1; display: flex; justify-content: center; align-items: center; background: var(--color-fondo); }
+.form-container { background: white; padding: 50px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); width: 100%; max-width: 450px; }
+.modern-form { display: flex; flex-direction: column; gap: 10px; }
+.modern-form label { font-size: 0.9rem; font-weight: 600; color: #555; }
+input { padding: 12px 15px; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; background: #f9f9f9; transition: all 0.3s; margin-bottom: 10px; }
+input:focus { border-color: var(--color-primario); background: white; outline: none; box-shadow: 0 0 0 3px rgba(243, 156, 18, 0.1); }
+button { padding: 14px; border: none; border-radius: 8px; font-weight: bold; font-size: 1rem; cursor: pointer; transition: 0.3s; }
+.btn-primario { background: var(--color-primario); color: white; }
+.btn-primario:hover { background: #d68910; }
+.btn-secundario { background: var(--color-secundario); color: white; }
+.btn-secundario:hover { background: #1a252f; }
+.btn-rojo { background: #e74c3c; color: white; margin-top: auto; }
+.btn-rojo:hover { background: #c0392b; }
+.divider { margin: 30px 0; border: 0; border-top: 1px solid #eee; }
+
+/* Vista Privada - Dashboard */
+.dashboard-container { display: flex; height: 100vh; background: var(--color-fondo); }
+.sidebar { width: 250px; background: var(--color-secundario); color: white; padding: 30px 20px; display: flex; flex-direction: column; gap: 20px; }
+.sidebar h2 { color: var(--color-primario); border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 20px; margin-bottom: 10px; }
+.sidebar ul { list-style: none; }
+.sidebar li { padding: 12px 15px; border-radius: 8px; cursor: pointer; margin-bottom: 5px; opacity: 0.8; transition: 0.3s; }
+.sidebar li:hover, .sidebar li.active { background: rgba(255,255,255,0.1); opacity: 1; font-weight: bold; }
+
+.main-content { flex: 1; padding: 40px; overflow-y: auto; }
+.dash-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; }
+.user-badge { background: #d4edda; color: #155724; padding: 8px 15px; border-radius: 20px; font-size: 0.9rem; font-weight: bold; }
+.dash-cards { display: flex; gap: 20px; margin-bottom: 40px; }
+.card { background: white; padding: 25px; border-radius: 12px; flex: 1; box-shadow: 0 5px 15px rgba(0,0,0,0.05); border-top: 4px solid var(--color-primario); }
+.big-number { font-size: 2.5rem; font-weight: bold; color: var(--color-secundario); margin-top: 10px; }
+.dash-actions { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
+.datos-caja { background: #f8f9fa; padding: 20px; margin-top: 20px; border-radius: 8px; border-left: 5px solid var(--color-primario); display: none; color: var(--color-secundario); }
+
+
+/* Este es el contenedor derecho (el área blanca) */
+.contenido-principal {
+    width: 100%;
+    min-height: 100vh; /* Que ocupe todo el alto de la pantalla */
+    
+    /* La magia de Flexbox para centrar todo al medio */
+    display: flex;
+    justify-content: center; /* Centrado horizontal */
+    align-items: center; /* Centrado vertical */
+    
+    background-color: #f8f9fa; /* El fondo clarito que ya tienes */
+}
+
+/* Le damos forma a tu formulario para que no se estire de más */
+.caja-formulario {
+    width: 100%;
+    max-width: 500px; /* Para que el formulario tenga un buen tamaño */
+    padding: 30px;
+    background: white; /* Opcional: para que resalte del fondo */
+    border-radius: 8px; /* Bordes redondeados */
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1); /* Una sombrita para que se vea limpio */
+}
+
+/* =========================================
+   DISEÑO RESPONSIVO (MÓVILES)
+   ========================================= */
+@media (max-width: 768px) {
+    .dashboard-container {
+        flex-direction: column; /* Apila el menú y el contenido */
+    }
+
+    .sidebar {
+        width: 100%;
+        min-height: auto;
+        padding: 15px;
+        display: flex;
+        flex-direction: row; /* Menú horizontal en celular */
+        justify-content: space-around;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    .sidebar ul {
+        display: flex;
+        gap: 15px;
+        margin-top: 10px;
+    }
+
+    .sidebar h2 {
+        margin: 0;
+        font-size: 1.2rem;
+    }
+
+    .main-content {
+        width: 100%;
+        padding: 15px;
+    }
+
+    /* Ajuste de las dos columnas en formularios */
+    .two-columns {
+        display: flex;
+        flex-direction: column; /* Pone los inputs uno debajo del otro */
+        gap: 0;
+    }
+}
+
+/* =========================================
+   ESTILOS PARA EL MODAL PROFESIONAL (ADMIN)
+   ========================================= */
+.modal-overlay {
+    display: none; position: fixed; z-index: 1000; left: 0; top: 0;
+    width: 100%; height: 100%; background-color: rgba(0,0,0,0.6);
+    backdrop-filter: blur(4px); justify-content: center; align-items: center;
+}
+.modal-content {
+    background-color: #fff; padding: 30px; border-radius: 12px;
+    width: 90%; max-width: 600px; box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    position: relative; animation: deslizarArriba 0.3s ease-out;
+}
+.close-modal {
+    position: absolute; top: 15px; right: 20px; font-size: 24px;
+    font-weight: bold; color: #aaa; cursor: pointer; transition: 0.2s;
+}
+.close-modal:hover { color: #e74c3c; }
+.modal-body p { margin-bottom: 12px; font-size: 15px; color: #444; border-bottom: 1px solid #eee; padding-bottom: 8px;}
+.modal-body strong { color: #2c3e50; }
+
+@keyframes deslizarArriba {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+}

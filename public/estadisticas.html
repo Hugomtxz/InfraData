@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>InfraData | Estadísticas</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body style="background-color: #f4f7f6; display: flex; margin: 0;">
+
+    <nav class="sidebar" style="width: 250px; background: #2c3e50; color: white; height: 100vh; padding: 20px;">
+        <h2>🏢 InfraData Admin</h2><br>
+        <ul style="list-style: none; padding: 0; line-height: 2.5;">
+            <li><a href="admin.html" style="color: white; text-decoration: none;">⚙️ Gestión de Reportes</a></li>
+            <li style="background: rgba(255,255,255,0.1); padding: 5px 10px; border-radius: 5px;">📊 Estadísticas Globales</li>
+            <li><a href="mapa.html" style="color: white; text-decoration: none;">🗺️ Mapa de Reportes</a></li>
+            <li><a href="login.html" style="color: #ff6b6b; text-decoration: none; display:block; margin-top:30px;">🚪 Cerrar Sesión</a></li>
+        </ul>
+    </nav>
+
+    <main style="flex: 1; padding: 40px; overflow-y: auto; height: 100vh;">
+        <header style="margin-bottom: 30px;">
+            <h2>Métricas y Estadísticas (ODS 9)</h2>
+        </header>
+
+        <div style="display: flex; gap: 20px; margin-bottom: 30px;">
+            <div style="flex: 1; background: white; padding: 20px; border-radius: 8px; border-left: 5px solid #3498db; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+                <h4 style="color: #7f8c8d; margin: 0;">Total de Proyectos</h4>
+                <h1 id="txtTotalProyectos" style="margin: 10px 0 0 0; color: #2c3e50;">0</h1>
+            </div>
+            <div style="flex: 1; background: white; padding: 20px; border-radius: 8px; border-left: 5px solid #2ecc71; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+                <h4 style="color: #7f8c8d; margin: 0;">Inversión Total (MXN)</h4>
+                <h1 id="txtInversionTotal" style="margin: 10px 0 0 0; color: #27ae60;">$0.00</h1>
+            </div>
+        </div>
+
+        <div style="display: flex; gap: 20px;">
+            <div style="flex: 1; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+                <h3 style="text-align: center; color: #333;">Proyectos por Estatus</h3>
+                <canvas id="graficaEstatus"></canvas>
+            </div>
+            <div style="flex: 1; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+                <h3 style="text-align: center; color: #333;">Tipos de Tecnología</h3>
+                <canvas id="graficaTecnologia"></canvas>
+            </div>
+        </div>
+    </main>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBVNkeV1ac6fs-hqzQeBZY1sQ79qoXdHLk",
+            authDomain: "infradata-ec24a.firebaseapp.com",
+            projectId: "infradata-ec24a",
+            storageBucket: "infradata-ec24a.firebasestorage.app",
+            messagingSenderId: "574865726695",
+            appId: "1:574865726695:web:b19b5c639c0f8b8b475642"
+        };
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        async function generarEstadisticas() {
+            const querySnapshot = await getDocs(collection(db, "reportes"));
+            
+            let totalProyectos = 0;
+            let inversionTotal = 0;
+            
+            // Contadores para gráficas
+            let estatus = { "Pendiente": 0, "Revisando": 0, "Completado": 0 };
+            let tecnologia = {};
+
+            querySnapshot.forEach((doc) => {
+                const datos = doc.data();
+                totalProyectos++;
+                inversionTotal += (datos.presupuesto || 0);
+                
+                // Contar Estatus
+                if(estatus[datos.estado] !== undefined) estatus[datos.estado]++;
+                
+                // Contar Tecnologías
+                let tec = datos.tecnologia || "Otra";
+                tecnologia[tec] = (tecnologia[tec] || 0) + 1;
+            });
+
+            // Actualizar Tarjetas de Texto
+            document.getElementById('txtTotalProyectos').innerText = totalProyectos;
+            document.getElementById('txtInversionTotal').innerText = new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(inversionTotal);
+
+            // Dibujar Gráfica de Estatus (Pastel)
+            new Chart(document.getElementById('graficaEstatus'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['Pendiente', 'Revisando', 'Completado'],
+                    datasets: [{ data: [estatus.Pendiente, estatus.Revisando, estatus.Completado], backgroundColor: ['#f1c40f', '#3498db', '#2ecc71'] }]
+                }
+            });
+
+            // Dibujar Gráfica de Tecnología (Barras)
+            new Chart(document.getElementById('graficaTecnologia'), {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(tecnologia),
+                    datasets: [{ label: 'Cantidad', data: Object.values(tecnologia), backgroundColor: '#9b59b6' }]
+                }
+            });
+        }
+
+        generarEstadisticas();
+    </script>
+</body>
+</html>

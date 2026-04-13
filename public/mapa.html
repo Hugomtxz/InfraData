@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>InfraData | Mapa de Reportes</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+</head>
+<body style="background-color: #f4f7f6; display: flex; margin: 0;">
+
+    <nav class="sidebar" style="width: 250px; background: #2c3e50; color: white; height: 100vh; padding: 20px;">
+        <h2>🏢 InfraData Admin</h2><br>
+        <ul style="list-style: none; padding: 0; line-height: 2.5;">
+            <li><a href="admin.html" style="color: white; text-decoration: none;">⚙️ Gestión de Reportes</a></li>
+            <li><a href="estadisticas.html" style="color: white; text-decoration: none;">📊 Estadísticas Globales</a></li>
+            <li style="background: rgba(255,255,255,0.1); padding: 5px 10px; border-radius: 5px;">🗺️ Mapa de Reportes</li>
+            <li><a href="login.html" style="color: #ff6b6b; text-decoration: none; display:block; margin-top:30px;">🚪 Cerrar Sesión</a></li>
+        </ul>
+    </nav>
+
+    <main style="flex: 1; padding: 20px; display: flex; flex-direction: column;">
+        <header style="margin-bottom: 20px;">
+            <h2>Mapa Global de Infraestructura</h2>
+            <p style="color: #666;">Visualización geográfica de todos los proyectos (ODS 9).</p>
+        </header>
+        
+        <div id="mapaGlobal" style="flex: 1; border-radius: 12px; border: 2px solid #ddd; box-shadow: 0 5px 15px rgba(0,0,0,0.1);"></div>
+    </main>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBVNkeV1ac6fs-hqzQeBZY1sQ79qoXdHLk",
+            authDomain: "infradata-ec24a.firebaseapp.com",
+            projectId: "infradata-ec24a",
+            storageBucket: "infradata-ec24a.firebasestorage.app",
+            messagingSenderId: "574865726695",
+            appId: "1:574865726695:web:b19b5c639c0f8b8b475642"
+        };
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // Iniciar mapa centrado en García / Monterrey
+        var map = L.map('mapaGlobal').setView([25.8156, -100.5958], 11);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map);
+
+        async function cargarPines() {
+            const querySnapshot = await getDocs(collection(db, "reportes"));
+            querySnapshot.forEach((doc) => {
+                const datos = doc.data();
+                if (datos.coordenadas) {
+                    const coords = datos.coordenadas.split(","); // Separa latitud y longitud
+                    const lat = parseFloat(coords[0]);
+                    const lng = parseFloat(coords[1]);
+                    
+                    // Colores de los pines según estatus
+                    let color = (datos.estado === 'Completado') ? 'green' : (datos.estado === 'Revisando') ? 'blue' : 'orange';
+                    
+                    // Crear pin
+                    L.marker([lat, lng]).addTo(map)
+                     .bindPopup(`<b>${datos.proyecto}</b><br>Estatus: ${datos.estado}<br>Tecnología: ${datos.tecnologia}`);
+                }
+            });
+        }
+        cargarPines();
+    </script>
+</body>
+</html>

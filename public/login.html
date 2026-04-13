@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>InfraData | Iniciar Sesión</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body style="display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; background-image: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.7)), url('fondo.jpg'); background-size: cover; background-position: center; background-attachment: fixed; font-family: sans-serif;">
+
+    <div style="background: rgba(255, 255, 255, 0.85); padding: 40px; border-radius: 15px; box-shadow: 0 8px 32px rgba(0,0,0,0.4); width: 90%; max-width: 400px; text-align: center; backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.5);">
+        
+        <img src="https://cdn-icons-png.flaticon.com/512/2942/2942821.png" alt="Logo InfraData" style="width: 80px; margin-bottom: 15px;">
+        <h2 style="color: #2c3e50; margin-top: 0; margin-bottom: 25px;">Acceso al Sistema</h2>
+        
+        <form id="loginForm" style="display: flex; flex-direction: column; gap: 15px;" onsubmit="event.preventDefault(); return false;">
+            <div style="text-align: left;">
+                <label style="font-weight: bold; font-size: 14px; color: #333;">Correo Electrónico</label>
+                <input type="email" id="email" required placeholder="usuario@ejemplo.com" style="width: 100%; padding: 12px; margin-top: 5px; border-radius: 5px; border: 1px solid #ccc; box-sizing: border-box; font-size: 14px;">
+            </div>
+
+            <div style="text-align: left; position: relative;">
+                <label style="font-weight: bold; font-size: 14px; color: #333;">Contraseña</label>
+                <input type="password" id="password" required placeholder="********" style="width: 100%; padding: 12px; padding-right: 40px; margin-top: 5px; border-radius: 5px; border: 1px solid #ccc; box-sizing: border-box; font-size: 14px;">
+                <span id="togglePassword" style="position: absolute; right: 12px; top: 38px; cursor: pointer; font-size: 18px; user-select: none;">👁️</span>
+            </div>
+
+            <button type="button" id="btnIniciarSesion" style="background-color: #f39c12; color: white; padding: 14px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 16px; margin-top: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: 0.3s;">Iniciar Sesión</button>
+        </form>
+
+        <hr style="margin: 30px 0; border: 0; border-top: 1px solid #ccc;">
+
+        <h3 style="color: #555; font-size: 16px; margin-bottom: 20px;">¿Nuevo Ciudadano?</h3>
+        
+        <form id="formRegistro" style="display: flex; flex-direction: column; gap: 15px;" onsubmit="event.preventDefault(); return false;">
+            <div style="text-align: left;">
+                <input type="email" id="regCorreo" required placeholder="Tu correo" style="width: 100%; padding: 12px; border-radius: 5px; border: 1px solid #ccc; box-sizing: border-box; font-size: 14px;">
+            </div>
+
+            <div style="text-align: left;">
+                <input type="password" id="regPassword" required placeholder="Crea una contraseña" style="width: 100%; padding: 12px; border-radius: 5px; border: 1px solid #ccc; box-sizing: border-box; font-size: 14px;">
+            </div>
+
+            <button type="button" id="btnRegistrar" style="background-color: #34495e; color: white; padding: 14px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">Registrarse</button>
+        </form>
+    </div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+    import { getFirestore, collection, getDocs, query, where, addDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyBVNkeV1ac6fs-hqzQeBZY1sQ79qoXdHLk",
+        authDomain: "infradata-ec24a.firebaseapp.com",
+        projectId: "infradata-ec24a",
+        storageBucket: "infradata-ec24a.firebasestorage.app",
+        messagingSenderId: "574865726695",
+        appId: "1:574865726695:web:b19b5c639c0f8b8b475642",
+        measurementId: "G-G6GG8L8HLR"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // --- LÓGICA DEL OJITO ---
+    const togglePassword = document.getElementById('togglePassword');
+    const passwordInput = document.getElementById('password');
+
+    if (togglePassword && passwordInput) {
+        togglePassword.addEventListener('click', function () {
+            const tipoActual = passwordInput.getAttribute('type');
+            if (tipoActual === 'password') {
+                passwordInput.setAttribute('type', 'text');
+                this.textContent = '🙈';
+            } else {
+                passwordInput.setAttribute('type', 'password');
+                this.textContent = '👁️';
+            }
+        });
+    }
+
+    // --- LÓGICA DE INICIAR SESIÓN ---
+    document.getElementById('btnIniciarSesion').addEventListener('click', async () => {
+        const form = document.getElementById('loginForm');
+        if(!form.reportValidity()) return; 
+
+        const email = document.getElementById('email').value.trim();
+        const password = document.getElementById('password').value.trim();
+
+        try {
+            const usuariosRef = collection(db, "usuarios");
+            const q = query(usuariosRef, where("correo", "==", email), where("password", "==", password));
+            const querySnapshot = await getDocs(q);
+
+            if (!querySnapshot.empty) {
+                let rol = "";
+                querySnapshot.forEach((doc) => { rol = doc.data().rol; });
+                
+                if (rol === "administrador") {
+                    window.location.href = "admin.html";
+                } else {
+                    window.location.href = "panel_usuario.html";
+                }
+            } else {
+                alert("Correo o contraseña incorrectos. Verifica tus datos.");
+            }
+        } catch (error) {
+            console.error("Error en login:", error);
+            alert("Error al conectar con la base de datos.");
+        }
+    });
+
+    // --- LÓGICA DE REGISTRO ---
+    document.getElementById('btnRegistrar').addEventListener('click', async () => {
+        const form = document.getElementById('formRegistro');
+        if(!form.reportValidity()) return; 
+
+        const correoNuevo = document.getElementById('regCorreo').value.trim();
+        const passwordNueva = document.getElementById('regPassword').value.trim();
+
+        try {
+            await addDoc(collection(db, "usuarios"), {
+                correo: correoNuevo,
+                password: passwordNueva,
+                rol: "ciudadano"
+            });
+            
+            alert("¡Registro exitoso! Ya puedes iniciar sesión en la parte de arriba.");
+            form.reset();
+        } catch (error) {
+            console.error("Error al registrar:", error);
+            alert("Hubo un error al crear tu cuenta.");
+        }
+    });
+</script>
+</body>
+</html>
