@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>InfraData | Iniciar Sesión</title>
     <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 <body style="display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; background-image: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.7)), url('fondo.jpg'); background-size: cover; background-position: center; background-attachment: fixed; font-family: sans-serif;">
 
@@ -25,7 +26,11 @@
                 <span id="togglePassword" style="position: absolute; right: 12px; top: 38px; cursor: pointer; font-size: 18px; user-select: none;">👁️</span>
             </div>
 
-            <button type="button" id="btnIniciarSesion" style="background-color: #f39c12; color: white; padding: 14px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 16px; margin-top: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: 0.3s;">Iniciar Sesión</button>
+            <div style="text-align: right; margin-top: -5px;">
+                <a href="#" id="btnRecuperar" style="font-size: 13px; color: #3498db; text-decoration: none; font-weight: bold;">¿Olvidaste tu contraseña?</a>
+            </div>
+
+            <button type="button" id="btnIniciarSesion" style="background-color: #f39c12; color: white; padding: 14px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 16px; margin-top: 5px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: 0.3s;">Iniciar Sesión</button>
         </form>
 
         <hr style="margin: 30px 0; border: 0; border-top: 1px solid #ccc;">
@@ -34,20 +39,25 @@
         
         <form id="formRegistro" style="display: flex; flex-direction: column; gap: 15px;" onsubmit="event.preventDefault(); return false;">
             <div style="text-align: left;">
-                <input type="email" id="regCorreo" required placeholder="Tu correo" style="width: 100%; padding: 12px; border-radius: 5px; border: 1px solid #ccc; box-sizing: border-box; font-size: 14px;">
+                <label style="font-weight: bold; font-size: 14px; color: #333;">Tu Correo</label>
+                <input type="email" id="regCorreo" required placeholder="nuevo@ejemplo.com" style="width: 100%; padding: 12px; margin-top: 5px; border-radius: 5px; border: 1px solid #ccc; box-sizing: border-box; font-size: 14px;">
             </div>
 
-            <div style="text-align: left;">
-                <input type="password" id="regPassword" required placeholder="Crea una contraseña" style="width: 100%; padding: 12px; border-radius: 5px; border: 1px solid #ccc; box-sizing: border-box; font-size: 14px;">
+            <div style="text-align: left; position: relative;">
+                <label style="font-weight: bold; font-size: 14px; color: #333;">Crea una contraseña segura</label>
+                <input type="password" id="regPassword" required placeholder="Mín. 8 caracteres, Mayús, Núm y Símbolo" style="width: 100%; padding: 12px; padding-right: 40px; margin-top: 5px; border-radius: 5px; border: 1px solid #ccc; box-sizing: border-box; font-size: 14px;">
+                <span id="toggleRegPassword" style="position: absolute; right: 12px; top: 38px; cursor: pointer; font-size: 18px; user-select: none;">👁️</span>
+                <small style="color: #666; font-size: 11px; display: block; margin-top: 5px;">Ejemplo: InfraData.2026!</small>
             </div>
 
-            <button type="button" id="btnRegistrar" style="background-color: #34495e; color: white; padding: 14px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">Registrarse</button>
+            <button type="button" id="btnRegistrar" style="background-color: #34495e; color: white; padding: 14px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 16px; margin-top: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">Registrarse</button>
         </form>
     </div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-    import { getFirestore, collection, getDocs, query, where, addDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+    // IMPORTAMOS doc Y updateDoc PARA PODER ACTUALIZAR LA CONTRASEÑA
+    import { getFirestore, collection, getDocs, query, where, addDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyBVNkeV1ac6fs-hqzQeBZY1sQ79qoXdHLk",
@@ -62,22 +72,88 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // --- LÓGICA DEL OJITO ---
+    // --- LÓGICA DE LOS OJITOS ---
     const togglePassword = document.getElementById('togglePassword');
     const passwordInput = document.getElementById('password');
-
     if (togglePassword && passwordInput) {
         togglePassword.addEventListener('click', function () {
-            const tipoActual = passwordInput.getAttribute('type');
-            if (tipoActual === 'password') {
-                passwordInput.setAttribute('type', 'text');
-                this.textContent = '🙈';
-            } else {
-                passwordInput.setAttribute('type', 'password');
-                this.textContent = '👁️';
-            }
+            const tipo = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordInput.setAttribute('type', tipo);
+            this.textContent = tipo === 'password' ? '👁️' : '🙈';
         });
     }
+
+    const toggleRegPassword = document.getElementById('toggleRegPassword');
+    const regPasswordInput = document.getElementById('regPassword');
+    if (toggleRegPassword && regPasswordInput) {
+        toggleRegPassword.addEventListener('click', function () {
+            const tipo = regPasswordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            regPasswordInput.setAttribute('type', tipo);
+            this.textContent = tipo === 'password' ? '👁️' : '🙈';
+        });
+    }
+
+    // --- RECUPERAR CONTRASEÑA (NUEVO) ---
+    document.getElementById('btnRecuperar').addEventListener('click', async (e) => {
+        e.preventDefault();
+        
+        // 1. Pedir el correo con una alerta
+        const { value: emailRestaurar } = await Swal.fire({
+            title: 'Recuperar Contraseña',
+            input: 'email',
+            inputLabel: 'Ingresa tu correo registrado',
+            inputPlaceholder: 'usuario@ejemplo.com',
+            showCancelButton: true,
+            confirmButtonText: '🔍 Buscar Cuenta',
+            cancelButtonText: 'Cancelar',
+            confirmButtonColor: '#3498db'
+        });
+
+        if (emailRestaurar) {
+            Swal.showLoading();
+            
+            // 2. Buscar si el correo existe en Firebase
+            const q = query(collection(db, "usuarios"), where("correo", "==", emailRestaurar.trim()));
+            const querySnapshot = await getDocs(q);
+
+            if (querySnapshot.empty) {
+                Swal.fire('Error', 'No existe ninguna cuenta registrada con este correo.', 'error');
+            } else {
+                // Obtenemos el ID del documento de ese usuario
+                let idDocumento = "";
+                querySnapshot.forEach((doc) => { idDocumento = doc.id; });
+
+                // 3. Pedir la nueva contraseña validando la seguridad
+                const { value: nuevaPassword } = await Swal.fire({
+                    title: 'Restablecer Contraseña',
+                    input: 'password',
+                    inputLabel: 'Mín. 8 caracteres, Mayúscula, Número y Símbolo',
+                    inputPlaceholder: 'Escribe tu nueva contraseña',
+                    showCancelButton: true,
+                    confirmButtonText: '💾 Guardar Contraseña',
+                    cancelButtonText: 'Cancelar',
+                    confirmButtonColor: '#2ecc71',
+                    inputValidator: (value) => {
+                        const regexSeguro = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+                        if (!regexSeguro.test(value)) {
+                            return 'La contraseña es muy débil. Revisa los requisitos (Ej: InfraData.2026!)';
+                        }
+                    }
+                });
+
+                if (nuevaPassword) {
+                    try {
+                        // 4. Actualizamos la base de datos
+                        const usuarioRef = doc(db, "usuarios", idDocumento);
+                        await updateDoc(usuarioRef, { password: nuevaPassword });
+                        Swal.fire('¡Éxito!', 'Tu contraseña ha sido actualizada. Ya puedes iniciar sesión.', 'success');
+                    } catch (error) {
+                        Swal.fire('Error', 'No se pudo actualizar la contraseña.', 'error');
+                    }
+                }
+            }
+        }
+    });
 
     // --- LÓGICA DE INICIAR SESIÓN ---
     document.getElementById('btnIniciarSesion').addEventListener('click', async () => {
@@ -102,21 +178,26 @@
                     window.location.href = "panel_usuario.html";
                 }
             } else {
-                alert("Correo o contraseña incorrectos. Verifica tus datos.");
+                Swal.fire('Atención', 'Correo o contraseña incorrectos.', 'warning');
             }
         } catch (error) {
-            console.error("Error en login:", error);
-            alert("Error al conectar con la base de datos.");
+            Swal.fire('Error', 'Error al conectar con la base de datos.', 'error');
         }
     });
 
     // --- LÓGICA DE REGISTRO ---
     document.getElementById('btnRegistrar').addEventListener('click', async () => {
         const form = document.getElementById('formRegistro');
-        if(!form.reportValidity()) return; 
-
-        const correoNuevo = document.getElementById('regCorreo').value.trim();
         const passwordNueva = document.getElementById('regPassword').value.trim();
+
+        const regexSeguro = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+        if (!regexSeguro.test(passwordNueva)) {
+            Swal.fire('⚠️ Contraseña débil', 'Debe tener al menos 8 caracteres, una mayúscula, un número y un símbolo especial (ej. @$!%*?&).', 'warning');
+            return; 
+        }
+
+        if(!form.reportValidity()) return; 
+        const correoNuevo = document.getElementById('regCorreo').value.trim();
 
         try {
             await addDoc(collection(db, "usuarios"), {
@@ -125,11 +206,10 @@
                 rol: "ciudadano"
             });
             
-            alert("¡Registro exitoso! Ya puedes iniciar sesión en la parte de arriba.");
+            Swal.fire('¡Bienvenido!', 'Registro exitoso. Ya puedes iniciar sesión arriba.', 'success');
             form.reset();
         } catch (error) {
-            console.error("Error al registrar:", error);
-            alert("Hubo un error al crear tu cuenta.");
+            Swal.fire('Error', 'Hubo un error al crear tu cuenta.', 'error');
         }
     });
 </script>
